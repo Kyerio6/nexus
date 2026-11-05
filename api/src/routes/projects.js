@@ -194,3 +194,4 @@ export async function handleUpdateProject(request, projectId, requestId, env) {
 
   return success(requestId, { project: data });
 }
+

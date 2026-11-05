@@ -2,7 +2,7 @@
 // Every request comes in through fetch() below and is sent to the matching route.
 
 import { success, error } from "./response.js";
-import { requireAdmin } from "./auth.js";
+import { requireAdmin, requireApiKey } from "./auth.js";
 import { handleHealth } from "./routes/health.js";
 import {
   handleListProjects,
@@ -10,6 +10,11 @@ import {
   handleGetProject,
   handleUpdateProject,
 } from "./routes/projects.js";
+import {
+  handleCreateKey,
+  handleListKeys,
+  handleRevokeKey,
+} from "./routes/keys.js";
 
 export default {
   async fetch(request, env) {
@@ -31,6 +36,13 @@ export default {
         return success(requestId, { id: user.id, email: user.email });
       }
 
+      // Application route: returns the project associated with the caller's API key.
+      if (method === "GET" && path === "/v1/me") {
+        const { project, apiKey, response } = await requireApiKey(request, env, requestId);
+        if (response) return response;
+        return success(requestId, { project, api_key: apiKey });
+      }
+
       // Admin routes: /v1/projects
       if (path === "/v1/projects" && (method === "GET" || method === "POST")) {
         const { response } = await requireAdmin(request, env, requestId);
@@ -49,6 +61,26 @@ export default {
         const projectId = projectMatch[1];
         if (method === "GET") return await handleGetProject(projectId, requestId, env);
         if (method === "PATCH") return await handleUpdateProject(request, projectId, requestId, env);
+      }
+
+      // Admin routes: /v1/projects/{id}/keys
+      const projectKeysMatch = path.match(/^\/v1\/projects\/([^/]+)\/keys$/);
+      if (projectKeysMatch && (method === "GET" || method === "POST")) {
+        const { response } = await requireAdmin(request, env, requestId);
+        if (response) return response;
+
+        const projectId = projectKeysMatch[1];
+        if (method === "GET") return await handleListKeys(projectId, requestId, env);
+        if (method === "POST") return await handleCreateKey(request, projectId, requestId, env);
+      }
+
+      // Admin routes: /v1/keys/{id}
+      const keyMatch = path.match(/^\/v1\/keys\/([^/]+)$/);
+      if (keyMatch && method === "DELETE") {
+        const { response } = await requireAdmin(request, env, requestId);
+        if (response) return response;
+
+        return await handleRevokeKey(keyMatch[1], requestId, env);
       }
 
       return error(requestId, 404, "ROUTE_NOT_FOUND", "The requested route does not exist.");

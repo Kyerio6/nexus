@@ -40,6 +40,10 @@ curl http://localhost:8787/v1/health
 | POST | `/v1/projects` | **Admin.** Creates a project (`name`, optional `slug`, optional `description`) |
 | GET | `/v1/projects/{id}` | **Admin.** Fetches one project by UUID |
 | PATCH | `/v1/projects/{id}` | **Admin.** Updates a project's `name`, `description`, or `status` (`active` / `archived`) |
+| POST | `/v1/projects/{id}/keys` | **Admin.** Generates a new API key (`name`). Returns the full `secret_key` **once** |
+| GET | `/v1/projects/{id}/keys` | **Admin.** Lists API key metadata for a project (never returns the secret) |
+| DELETE | `/v1/keys/{id}` | **Admin.** Revokes an API key |
+| GET | `/v1/me` | **API Key.** Returns the project associated with the caller's API key |
 
 ### Admin routes
 
@@ -50,6 +54,17 @@ Authorization: Bearer <supabase-access-token>
 ```
 
 Missing or invalid token → `401 UNAUTHORIZED`. Valid login but not an admin → `403 FORBIDDEN`.
+
+### Application routes (API keys)
+
+Applications authenticate with a project API key (`nx_sk_...`) in either header:
+
+```
+Authorization: Bearer nx_sk_...
+X-API-Key: nx_sk_...
+```
+
+The authorized project is always derived from the validated key hash. Revoked keys return `401 REVOKED_API_KEY`; keys belonging to an archived project return `403 PROJECT_ARCHIVED`.
 
 All responses use the same JSON shape:
 
