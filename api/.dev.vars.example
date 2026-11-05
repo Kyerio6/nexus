@@ -1,0 +1,7 @@
+# Copy this file to ".dev.vars" and fill in real values.
+# ".dev.vars" is git-ignored. This example file is safe to commit.
+# Find these in Supabase: Project Settings -> API Keys / Data API.
+
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxx
+

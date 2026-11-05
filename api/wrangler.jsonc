@@ -1,0 +1,7 @@
+{
+  // Cloudflare Worker configuration for the NEXUS API.
+  "name": "nexus-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01"
+}
+
