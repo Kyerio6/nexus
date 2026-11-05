@@ -427,3 +427,43 @@ I do not need features that sound impressive but solve no current problem.
 I need straightforward, secure, maintainable software that I can understand and continue developing myself.
 
 **Always prioritize simplicity, reliability, security, and maintainability over complexity and feature count.**
+
+## 12. GitHub and Git Workflow
+
+This project must be maintained in Git and synchronized with my GitHub repository.
+
+Follow these rules throughout development:
+
+1. Always check the Git status before making changes.
+2. Keep the project under Git version control.
+3. After completing and testing a meaningful development milestone, prepare a Git commit.
+4. Use clear, descriptive commit messages.
+5. Push completed milestone commits to the connected GitHub repository after showing me the changes and obtaining my approval for the push.
+6. Do not create meaningless commits just to increase contribution counts.
+7. Do not commit temporary files, build outputs, dependencies, or unnecessary generated files.
+8. Never commit `.env`, API keys, passwords, private credentials, database secrets, or other sensitive information.
+9. Maintain a proper `.gitignore`.
+10. Never force-push, rewrite published history, or delete remote branches without my explicit permission.
+11. Never overwrite or discard existing work without checking first.
+12. If Git reports a conflict or authentication error, explain the problem before attempting potentially destructive fixes.
+
+### Commit message format
+
+Use conventional, descriptive messages such as:
+
+- `feat: add project management endpoints`
+- `feat: integrate Supabase connection`
+- `fix: correct API key validation`
+- `docs: update API documentation`
+- `refactor: simplify file upload handler`
+- `test: add project API tests`
+
+### Important
+
+I want GitHub to reflect my actual development progress.
+
+Commit meaningful, tested changes regularly, preferably after each completed milestone.
+
+Do not make fake commits, manipulate commit dates, or generate artificial activity.
+
+Always keep the repository clean, understandable, and presentable for my future developer portfolio.
