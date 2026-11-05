@@ -4,6 +4,12 @@
 import { success, error } from "./response.js";
 import { requireAdmin } from "./auth.js";
 import { handleHealth } from "./routes/health.js";
+import {
+  handleListProjects,
+  handleCreateProject,
+  handleGetProject,
+  handleUpdateProject,
+} from "./routes/projects.js";
 
 export default {
   async fetch(request, env) {
@@ -23,6 +29,26 @@ export default {
         const { user, response } = await requireAdmin(request, env, requestId);
         if (response) return response;
         return success(requestId, { id: user.id, email: user.email });
+      }
+
+      // Admin routes: /v1/projects
+      if (path === "/v1/projects" && (method === "GET" || method === "POST")) {
+        const { response } = await requireAdmin(request, env, requestId);
+        if (response) return response;
+
+        if (method === "GET") return await handleListProjects(requestId, env);
+        if (method === "POST") return await handleCreateProject(request, requestId, env);
+      }
+
+      // Admin routes: /v1/projects/{id}
+      const projectMatch = path.match(/^\/v1\/projects\/([^/]+)$/);
+      if (projectMatch && (method === "GET" || method === "PATCH")) {
+        const { response } = await requireAdmin(request, env, requestId);
+        if (response) return response;
+
+        const projectId = projectMatch[1];
+        if (method === "GET") return await handleGetProject(projectId, requestId, env);
+        if (method === "PATCH") return await handleUpdateProject(request, projectId, requestId, env);
       }
 
       return error(requestId, 404, "ROUTE_NOT_FOUND", "The requested route does not exist.");

@@ -36,6 +36,10 @@ curl http://localhost:8787/v1/health
 |---|---|---|
 | GET | `/v1/health` | Returns `status: "ok"` if the API is running and the database is reachable, otherwise `"degraded"`. `database` is `"ok"`, `"error"` or `"not_configured"` |
 | GET | `/v1/admin/me` | **Admin.** Returns the logged-in admin's `id` and `email` |
+| GET | `/v1/projects` | **Admin.** Lists all projects (newest first) |
+| POST | `/v1/projects` | **Admin.** Creates a project (`name`, optional `slug`, optional `description`) |
+| GET | `/v1/projects/{id}` | **Admin.** Fetches one project by UUID |
+| PATCH | `/v1/projects/{id}` | **Admin.** Updates a project's `name`, `description`, or `status` (`active` / `archived`) |
 
 ### Admin routes
 
