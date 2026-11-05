@@ -1,7 +1,8 @@
 // NEXUS API — entry point.
 // Every request comes in through fetch() below and is sent to the matching route.
 
-import { error } from "./response.js";
+import { success, error } from "./response.js";
+import { requireAdmin } from "./auth.js";
 import { handleHealth } from "./routes/health.js";
 
 export default {
@@ -17,6 +18,13 @@ export default {
         return await handleHealth(requestId, env);
       }
 
+      // Returns the logged-in admin. Used to confirm a login works.
+      if (method === "GET" && path === "/v1/admin/me") {
+        const { user, response } = await requireAdmin(request, env, requestId);
+        if (response) return response;
+        return success(requestId, { id: user.id, email: user.email });
+      }
+
       return error(requestId, 404, "ROUTE_NOT_FOUND", "The requested route does not exist.");
     } catch (err) {
       // Log the real error for us; never send internal details to the caller.
@@ -25,4 +33,3 @@ export default {
     }
   },
 };
-

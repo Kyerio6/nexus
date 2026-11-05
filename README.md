@@ -35,6 +35,17 @@ curl http://localhost:8787/v1/health
 | Method | Path | Description |
 |---|---|---|
 | GET | `/v1/health` | Returns `status: "ok"` if the API is running and the database is reachable, otherwise `"degraded"`. `database` is `"ok"`, `"error"` or `"not_configured"` |
+| GET | `/v1/admin/me` | **Admin.** Returns the logged-in admin's `id` and `email` |
+
+### Admin routes
+
+Admin routes need a Supabase Auth login token from a user listed in `ADMIN_USER_IDS`:
+
+```
+Authorization: Bearer <supabase-access-token>
+```
+
+Missing or invalid token → `401 UNAUTHORIZED`. Valid login but not an admin → `403 FORBIDDEN`.
 
 All responses use the same JSON shape:
 
