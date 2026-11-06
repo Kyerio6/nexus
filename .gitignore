@@ -4,6 +4,8 @@ node_modules/
 # Local secrets — never commit these
 .dev.vars
 .env
+.env.local
+*.local
 
 # Wrangler local state and build output
 .wrangler/

@@ -5,8 +5,8 @@ My personal API infrastructure platform. See `AGENTS.md` for the full project in
 ## Structure
 
 - `api/` — the NEXUS API (one Cloudflare Worker)
-
 - `database/migrations/` — SQL files, run in order in the Supabase SQL Editor
+- `dashboard/` — the React + Vite developer dashboard
 
 ## Database setup (once)
 
@@ -32,6 +32,17 @@ The API runs at http://localhost:8787. Test it:
 ```bash
 curl http://localhost:8787/v1/health
 ```
+
+## Run the Developer Dashboard locally
+
+```bash
+cd dashboard
+npm install
+copy .env.example .env.local   # fill in VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY
+npm run dev
+```
+
+The dashboard runs at http://localhost:5173.
 
 ## Endpoints
 
