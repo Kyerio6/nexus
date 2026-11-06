@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { supabase, isSupabaseConfigured } from "./supabase.js";
 import { apiRequest, API_BASE_URL } from "./api.js";
+import ProjectsPage from "./pages/ProjectsPage.jsx";
+import KeysPage from "./pages/KeysPage.jsx";
+import MediaPage from "./pages/MediaPage.jsx";
+import LogsPage from "./pages/LogsPage.jsx";
+import DocsPage from "./pages/DocsPage.jsx";
+import SettingsPage from "./pages/SettingsPage.jsx";
 
 const PAGES = [
   { id: "overview", label: "Overview" },
@@ -126,15 +132,12 @@ export default function App() {
 
       <main className="main-content">
         {activePage === "overview" && <OverviewPage token={token} adminUser={adminUser} />}
-        {activePage !== "overview" && (
-          <div className="card">
-            <h3>{PAGES.find((p) => p.id === activePage)?.label}</h3>
-            <p className="muted">
-              This page will be populated in Milestone 10. Use the Overview tab to inspect live
-              platform health.
-            </p>
-          </div>
-        )}
+        {activePage === "projects" && <ProjectsPage token={token} />}
+        {activePage === "keys" && <KeysPage token={token} />}
+        {activePage === "media" && <MediaPage token={token} />}
+        {activePage === "logs" && <LogsPage token={token} />}
+        {activePage === "docs" && <DocsPage token={token} />}
+        {activePage === "settings" && <SettingsPage adminUser={adminUser} />}
       </main>
     </div>
   );
@@ -207,7 +210,7 @@ function LoginScreen({ initialError }) {
 
 function OverviewPage({ token, adminUser }) {
   const [health, setHealth] = useState(null);
-  const [counts, setCounts] = useState({ projects: 0, files: 0, logs: 0 });
+  const [counts, setCounts] = useState({ projects: 0, files: 0, logs: [] });
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -223,13 +226,13 @@ function OverviewPage({ token, adminUser }) {
         apiRequest("/v1/health"),
         apiRequest("/v1/projects", { token }),
         apiRequest("/v1/files?limit=100", { token }),
-        apiRequest("/v1/logs?limit=20", { token }),
+        apiRequest("/v1/logs?limit=10", { token }),
       ]);
       setHealth(healthData);
       setCounts({
         projects: projectsData.projects.length,
         files: filesData.files.length,
-        logs: logsData.logs.length,
+        logs: logsData.logs,
       });
     } catch (e) {
       setErr(e.message);
@@ -277,9 +280,49 @@ function OverviewPage({ token, adminUser }) {
         </div>
 
         <div className="card">
-          <div className="muted">Projects</div>
-          <div className="stat-value">{loading ? "…" : counts.projects}</div>
+          <div className="muted">Projects / Uploaded Assets</div>
+          <div className="stat-value">
+            {loading ? "…" : `${counts.projects} / ${counts.files}`}
+          </div>
         </div>
+      </div>
+
+      <div className="card">
+        <h3>Recent Activity</h3>
+        {loading ? (
+          <div className="muted">Loading recent activity...</div>
+        ) : counts.logs.length === 0 ? (
+          <div className="muted">No activity recorded yet.</div>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Time (UTC)</th>
+                <th>Action</th>
+                <th>Actor</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {counts.logs.map((l) => (
+                <tr key={l.id}>
+                  <td className="muted">
+                    {new Date(l.created_at).toISOString().slice(0, 19).replace("T", " ")}
+                  </td>
+                  <td>
+                    <code>{l.action}</code>
+                  </td>
+                  <td>
+                    <span className="badge badge-ok">{l.actor_type}</span>
+                  </td>
+                  <td>
+                    <code style={{ fontSize: 12 }}>{JSON.stringify(l.details)}</code>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="card">

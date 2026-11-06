@@ -10,3 +10,4 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && publishableKey);
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, publishableKey)
   : null;
+

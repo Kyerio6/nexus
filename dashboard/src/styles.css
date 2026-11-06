@@ -119,7 +119,7 @@ code, pre {
 
 .main-content {
   padding: 28px 36px;
-  max-width: 1120px;
+  max-width: 1240px;
 }
 
 .page-header {
@@ -154,6 +154,31 @@ code, pre {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.docs-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.code-block {
+  background: #090d16;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 14px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #e2e8f0;
+  margin: 0;
 }
 
 .stat-value {
@@ -282,3 +307,4 @@ code, pre {
   font-size: 12px;
   text-transform: uppercase;
 }
+

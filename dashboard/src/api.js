@@ -36,3 +36,4 @@ export async function apiRequest(path, { method = "GET", token = null, body = nu
 
   return json.data;
 }
+

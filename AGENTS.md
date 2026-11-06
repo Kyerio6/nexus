@@ -1,4 +1,4 @@
-# NEXUS — Main Project Instructions
+﻿# NEXUS — Main Project Instructions
 
 ## 1. Project Overview
 
@@ -467,3 +467,217 @@ Commit meaningful, tested changes regularly, preferably after each completed mil
 Do not make fake commits, manipulate commit dates, or generate artificial activity.
 
 Always keep the repository clean, understandable, and presentable for my future developer portfolio.
+
+
+## 13. Developer Documentation and Copy-Paste Code Examples
+
+NEXUS must have developer-friendly API documentation.
+
+The documentation should not merely explain what an endpoint does. Developers should be able to copy a working code example, provide their own credentials, and integrate the endpoint into their applications.
+
+### A. Documentation Requirements
+
+Every implemented API endpoint must have documentation containing:
+
+1. Endpoint name and description.
+2. HTTP method and URL.
+3. Authentication requirements.
+4. Required headers.
+5. Required parameters.
+6. Optional parameters.
+7. Request body format.
+8. Successful response example.
+9. Possible error responses.
+10. Ready-to-copy code examples.
+
+Never document an endpoint that has not actually been implemented and tested.
+
+### B. Supported Code Examples
+
+Where applicable, provide examples for:
+
+- HTML + Vanilla JavaScript.
+- JavaScript (Fetch API).
+- React.
+- PHP.
+- Laravel.
+- Python.
+- C# / Unity.
+
+Use simple, practical examples that developers can copy directly into their projects.
+
+Examples should include:
+- Necessary imports.
+- Required configuration.
+- API endpoint.
+- Authentication headers.
+- Request construction.
+- Error handling.
+- Response handling.
+
+Avoid incomplete pseudocode presented as working code.
+
+Use clear placeholders such as YOUR_API_KEY and YOUR_PROJECT_ID.
+
+### C. Copy Code Functionality
+
+Every code example must have a Copy Code button.
+
+Copied examples must preserve formatting and be ready to edit and use.
+
+### D. Interactive API Testing
+
+Where practical, implement a Try It feature.
+
+It should allow developers to:
+- Enter their project credentials.
+- Provide required parameters.
+- Upload test files when relevant.
+- Execute requests against the actual NEXUS API.
+- View HTTP status codes.
+- View response JSON.
+- View useful error messages.
+
+Never expose administrator credentials, Supabase service-role keys, R2 credentials, or other privileged secrets in the browser.
+
+Warn developers that browser-based API credentials are visible to users. Do not encourage putting secret keys into public HTML, React applications, mobile applications, or Unity builds.
+
+For endpoints requiring privileged operations, use a safe server-side testing approach.
+
+### E. Documentation Accuracy
+
+Documentation must always reflect the actual implementation.
+
+When an endpoint changes:
+- Update its documentation.
+- Update its code examples.
+- Update request and response examples.
+- Verify examples against the actual endpoint.
+
+Do not invent endpoint functionality, request fields, or response properties.
+
+### F. Documentation Design
+
+Create a clean developer documentation interface with:
+
+- Sidebar navigation.
+- Searchable API reference.
+- Organized endpoint categories.
+- Language selectors for code examples.
+- Copy Code buttons.
+- Request and response examples.
+- Try It functionality where appropriate.
+
+Keep the documentation interface consistent with the NEXUS dashboard.
+
+### G. Development Principle
+
+Documentation is part of the feature, not an optional task to complete later.
+
+An API endpoint is not considered fully complete until its documentation and practical code examples are available and verified.
+
+## 14. AI-Friendly Documentation and AI IDE Integration
+
+NEXUS documentation must be designed for both human developers and AI coding assistants.
+
+The goal is to allow an AI coding assistant to understand NEXUS, discover its available services, retrieve integration instructions, and implement NEXUS features in another project with minimal manual guidance.
+
+### A. OpenAPI Specification
+
+Maintain a machine-readable OpenAPI specification.
+
+Publish it at:
+
+/openapi.json
+
+It must describe:
+- All implemented API endpoints.
+- HTTP methods.
+- Request parameters.
+- Request body schemas.
+- Authentication requirements.
+- Response schemas.
+- HTTP status codes.
+- Error responses.
+- Useful descriptions and examples.
+
+Keep the specification synchronized with the actual API implementation.
+
+Never document endpoints that do not exist.
+
+### B. AI-Readable Documentation
+
+Publish these resources:
+
+/llms.txt
+/llms-full.txt
+
+`llms.txt` should be a concise documentation index containing:
+- What NEXUS is.
+- Available services.
+- Authentication overview.
+- API reference links.
+- SDK documentation links.
+- Integration guides.
+- Security guidelines.
+- Important implementation rules.
+
+`llms-full.txt` should contain the complete consolidated documentation for AI assistants that prefer retrieving everything in one request.
+
+Also provide individual Markdown documentation pages so AI assistants can retrieve only the relevant information.
+
+### C. AI Integration Guide
+
+Create an official AI integration guide explaining how an AI coding assistant should integrate NEXUS into an existing application.
+
+It must explain:
+1. How to discover available NEXUS services.
+2. How to retrieve endpoint documentation.
+3. How to select the correct SDK or integration method.
+4. How to authenticate securely.
+5. How to implement integrations using official examples.
+6. How to handle errors.
+7. How to test integrations.
+8. What security practices must never be violated.
+
+The guide must instruct AI assistants to use official NEXUS documentation instead of inventing endpoints, parameters, or implementation details.
+
+### D. Code Examples
+
+All API documentation must include verified code examples for supported environments where applicable.
+
+Examples should be accessible individually and through the consolidated AI documentation.
+
+### E. Future MCP Integration
+
+Plan for a lightweight NEXUS documentation MCP server.
+
+Its initial purpose should be read-only documentation access.
+
+Potential tools:
+- search_docs
+- get_endpoint
+- get_example
+- get_sdk_guide
+
+Do not implement MCP during the initial API development unless there is a clear practical need.
+
+When implemented, it must expose documentation without exposing project secrets, private user data, or administrative infrastructure credentials.
+
+### F. Documentation Maintenance
+
+Whenever an API endpoint, SDK, authentication method, or integration example changes:
+
+- Update the human-readable documentation.
+- Update the OpenAPI specification.
+- Update the relevant AI-readable documentation.
+- Update code examples.
+- Verify that the documentation matches the actual implementation.
+
+Documentation must remain version-aware and must not silently describe outdated API behavior.
+
+### G. Final Goal
+
+A developer should be able to give an AI coding assistant the NEXUS documentation URL and ask it to integrate a NEXUS service into an existing project.
+
+The assistant should be able to discover the correct implementation without requiring the developer to manually explain the NEXUS architecture every time.
