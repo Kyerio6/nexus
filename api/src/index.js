@@ -17,6 +17,11 @@ import {
   handleRevokeKey,
 } from "./routes/keys.js";
 import { handleListLogs } from "./routes/logs.js";
+import {
+  handleUploadFile,
+  handleListFiles,
+  handleDeleteFile,
+} from "./routes/files.js";
 
 export default {
   async fetch(request, env) {
@@ -49,6 +54,23 @@ export default {
     }
   },
 };
+
+// Allows either a project API key ("nx_sk_...") or a logged-in admin token.
+async function requireApiKeyOrAdmin(request, env, requestId) {
+  const authHeader = request.headers.get("Authorization") || "";
+  const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  const hasApiKeyHeader = Boolean((request.headers.get("X-API-Key") || "").trim());
+
+  if (hasApiKeyHeader || bearer.startsWith("nx_sk_")) {
+    const { project, apiKey, response } = await requireApiKey(request, env, requestId);
+    if (response) return { response };
+    return { caller: { type: "api_key", project, apiKey } };
+  }
+
+  const { user, response } = await requireAdmin(request, env, requestId);
+  if (response) return { response };
+  return { caller: { type: "admin", user } };
+}
 
 async function routeRequest(request, url, method, path, requestId, env) {
   if (method === "GET" && path === "/v1/health") {
@@ -119,6 +141,31 @@ async function routeRequest(request, url, method, path, requestId, env) {
     if (response) return response;
 
     return await handleListLogs(url, requestId, env);
+  }
+
+  // File routes: POST /v1/files/upload (API key)
+  if (path === "/v1/files/upload" && method === "POST") {
+    const { project, apiKey, response } = await requireApiKey(request, env, requestId);
+    if (response) return response;
+
+    return await handleUploadFile(request, project, apiKey, requestId, env);
+  }
+
+  // File routes: GET /v1/files (API key or Admin)
+  if (path === "/v1/files" && method === "GET") {
+    const { caller, response } = await requireApiKeyOrAdmin(request, env, requestId);
+    if (response) return response;
+
+    return await handleListFiles(url, caller, requestId, env);
+  }
+
+  // File routes: DELETE /v1/files/{id} (API key or Admin)
+  const fileMatch = path.match(/^\/v1\/files\/([^/]+)$/);
+  if (fileMatch && fileMatch[1] !== "upload" && method === "DELETE") {
+    const { caller, response } = await requireApiKeyOrAdmin(request, env, requestId);
+    if (response) return response;
+
+    return await handleDeleteFile(fileMatch[1], caller, requestId, env);
   }
 
   return error(requestId, 404, "ROUTE_NOT_FOUND", "The requested route does not exist.");

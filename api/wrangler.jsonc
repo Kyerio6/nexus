@@ -3,6 +3,12 @@
   "name": "nexus-api",
   "main": "src/index.js",
   "compatibility_date": "2026-10-01",
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "nexus-media"
+    }
+  ],
   "ratelimits": [
     {
       "name": "RATE_LIMITER",

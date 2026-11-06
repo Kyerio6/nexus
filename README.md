@@ -14,6 +14,7 @@ My personal API infrastructure platform. See `AGENTS.md` for the full project in
 2. Open **SQL Editor**, paste and run each migration in order:
    - `database/migrations/001_projects_and_api_keys.sql`
    - `database/migrations/002_activity_logs.sql`
+   - `database/migrations/003_media_assets.sql`
 
 ## Run the API locally
 
@@ -47,6 +48,9 @@ curl http://localhost:8787/v1/health
 | DELETE | `/v1/keys/{id}` | **Admin.** Revokes an API key |
 | GET | `/v1/logs` | **Admin.** Lists recent activity logs (optional `?project_id=` and `?limit=1..100`) |
 | GET | `/v1/me` | **API Key.** Returns the project associated with the caller's API key |
+| POST | `/v1/files/upload` | **API Key.** Uploads a file (`multipart/form-data` with `file` and optional `visibility`: `private` or `public`) |
+| GET | `/v1/files` | **API Key / Admin.** Lists uploaded file metadata (scoped to the caller's project for API keys) |
+| DELETE | `/v1/files/{id}` | **API Key / Admin.** Deletes a file from R2 and removes its metadata |
 
 ### Admin routes
 
