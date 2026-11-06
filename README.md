@@ -8,6 +8,7 @@ My personal API infrastructure platform. See `AGENTS.md` for the full project in
 - `database/migrations/` — SQL files, run in order in the Supabase SQL Editor
 - `dashboard/` — the React + Vite developer dashboard
 - `docs/` — API Reference (`docs/API.md`) and AI Integration Guide (`docs/AI_INTEGRATION_GUIDE.md`)
+- `sdks/js/` — Lightweight JavaScript / TypeScript SDK (`@nexus/sdk`)
 
 ## Database setup (once)
 

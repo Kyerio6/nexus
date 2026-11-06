@@ -87,3 +87,4 @@ When an error occurs (`HTTP 4xx` or `5xx`):
 
 ### 6. Activity Logs *(Admin)*
 - **`GET /v1/logs`** — Query params: optional `?project_id=<uuid>` and `?limit=1..100` (default `50`). Returns `{ logs: [...] }`.
+

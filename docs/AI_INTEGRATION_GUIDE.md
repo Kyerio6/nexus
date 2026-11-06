@@ -132,3 +132,4 @@ Common error codes:
 2. **Never expose `SUPABASE_SECRET_KEY`** outside the NEXUS Cloudflare Worker secrets (`.dev.vars` locally or `wrangler secret` in production).
 3. **Never commit `.env`, `.env.local`, or `.dev.vars` files** to Git.
 4. **Never bypass project isolation** — each application should have its own NEXUS project and its own `nx_sk_...` API key so keys can be rotated or revoked independently.
+
