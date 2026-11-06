@@ -20,6 +20,10 @@ import { handleListLogs } from "./routes/logs.js";
 import {
   handleUploadFile,
   handleListFiles,
+  handleGetFile,
+  handleUpdateFileVisibility,
+  handleDownloadFile,
+  handlePublicFile,
   handleDeleteFile,
 } from "./routes/files.js";
 
@@ -148,7 +152,7 @@ async function routeRequest(request, url, method, path, requestId, env) {
     const { project, apiKey, response } = await requireApiKey(request, env, requestId);
     if (response) return response;
 
-    return await handleUploadFile(request, project, apiKey, requestId, env);
+    return await handleUploadFile(request, project, apiKey, url.origin, requestId, env);
   }
 
   // File routes: GET /v1/files (API key or Admin)
@@ -159,13 +163,33 @@ async function routeRequest(request, url, method, path, requestId, env) {
     return await handleListFiles(url, caller, requestId, env);
   }
 
-  // File routes: DELETE /v1/files/{id} (API key or Admin)
-  const fileMatch = path.match(/^\/v1\/files\/([^/]+)$/);
-  if (fileMatch && fileMatch[1] !== "upload" && method === "DELETE") {
+  // File routes: GET /v1/files/{id}/content (API key or Admin)
+  const fileContentMatch = path.match(/^\/v1\/files\/([^/]+)\/content$/);
+  if (fileContentMatch && method === "GET") {
     const { caller, response } = await requireApiKeyOrAdmin(request, env, requestId);
     if (response) return response;
 
-    return await handleDeleteFile(fileMatch[1], caller, requestId, env);
+    return await handleDownloadFile(fileContentMatch[1], caller, requestId, env);
+  }
+
+  // File routes: GET, PATCH, DELETE /v1/files/{id} (API key or Admin)
+  const fileMatch = path.match(/^\/v1\/files\/([^/]+)$/);
+  if (fileMatch && fileMatch[1] !== "upload" && ["GET", "PATCH", "DELETE"].includes(method)) {
+    const { caller, response } = await requireApiKeyOrAdmin(request, env, requestId);
+    if (response) return response;
+
+    const fileId = fileMatch[1];
+    if (method === "GET") return await handleGetFile(fileId, caller, url.origin, requestId, env);
+    if (method === "PATCH") {
+      return await handleUpdateFileVisibility(request, fileId, caller, url.origin, requestId, env);
+    }
+    if (method === "DELETE") return await handleDeleteFile(fileId, caller, requestId, env);
+  }
+
+  // Public file route: GET /v1/public/files/{id} (no auth required; only serves 'public' files)
+  const publicFileMatch = path.match(/^\/v1\/public\/files\/([^/]+)$/);
+  if (publicFileMatch && method === "GET") {
+    return await handlePublicFile(publicFileMatch[1], requestId, env);
   }
 
   return error(requestId, 404, "ROUTE_NOT_FOUND", "The requested route does not exist.");

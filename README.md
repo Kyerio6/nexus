@@ -50,7 +50,11 @@ curl http://localhost:8787/v1/health
 | GET | `/v1/me` | **API Key.** Returns the project associated with the caller's API key |
 | POST | `/v1/files/upload` | **API Key.** Uploads a file (`multipart/form-data` with `file` and optional `visibility`: `private` or `public`) |
 | GET | `/v1/files` | **API Key / Admin.** Lists uploaded file metadata (scoped to the caller's project for API keys) |
+| GET | `/v1/files/{id}` | **API Key / Admin.** Returns one file's metadata and URLs |
+| PATCH | `/v1/files/{id}` | **API Key / Admin.** Updates a file's `visibility` (`public` or `private`) |
+| GET | `/v1/files/{id}/content` | **API Key / Admin.** Downloads a file's binary content (both `private` and `public` files) |
 | DELETE | `/v1/files/{id}` | **API Key / Admin.** Deletes a file from R2 and removes its metadata |
+| GET | `/v1/public/files/{id}` | **Public.** Streams a file's binary content without auth **only if** `visibility` is `"public"` and its project is `"active"` |
 
 ### Admin routes
 

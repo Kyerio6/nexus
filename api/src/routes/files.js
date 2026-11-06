@@ -39,8 +39,41 @@ function sanitizeFilename(filename) {
   return cleaned || "file";
 }
 
+// Adds ready-to-use content_url and public_url fields to a media_assets row.
+function formatFileRecord(asset, origin) {
+  return {
+    id: asset.id,
+    project_id: asset.project_id,
+    original_filename: asset.original_filename,
+    storage_key: asset.storage_key,
+    mime_type: asset.mime_type,
+    size_bytes: asset.size_bytes,
+    visibility: asset.visibility,
+    created_at: asset.created_at,
+    content_url: `${origin}/v1/files/${asset.id}/content`,
+    public_url: asset.visibility === "public" ? `${origin}/v1/public/files/${asset.id}` : null,
+  };
+}
+
+// Streams an R2 object back to the caller with safe HTTP headers.
+function buildBinaryResponse(r2Object, asset, isPublic) {
+  const safeName = sanitizeFilename(asset.original_filename);
+  const body = r2Object.body ?? r2Object.bytes;
+
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": asset.mime_type || "application/octet-stream",
+      "Content-Length": String(asset.size_bytes),
+      "Content-Disposition": `inline; filename="${safeName}"`,
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": isPublic ? "public, max-age=3600" : "private, no-store",
+    },
+  });
+}
+
 // POST /v1/files/upload — upload a file to R2 and save its metadata in Supabase.
-export async function handleUploadFile(request, project, apiKey, requestId, env) {
+export async function handleUploadFile(request, project, apiKey, origin, requestId, env) {
   if (!env.MEDIA_BUCKET) {
     return error(requestId, 500, "STORAGE_NOT_CONFIGURED", "File storage bucket is not configured.");
   }
@@ -154,7 +187,7 @@ export async function handleUploadFile(request, project, apiKey, requestId, env)
     },
   });
 
-  return success(requestId, { file: data }, 201);
+  return success(requestId, { file: formatFileRecord(data, origin) }, 201);
 }
 
 // GET /v1/files — list uploaded files.
@@ -222,7 +255,174 @@ export async function handleListFiles(url, caller, requestId, env) {
     return error(requestId, 500, "DATABASE_ERROR", "Could not fetch files.");
   }
 
-  return success(requestId, { files: data });
+  return success(requestId, {
+    files: data.map((row) => formatFileRecord(row, url.origin)),
+  });
+}
+
+// GET /v1/files/{id} — fetch one file's metadata.
+export async function handleGetFile(fileId, caller, origin, requestId, env) {
+  if (!UUID_REGEX.test(fileId)) {
+    return error(requestId, 400, "INVALID_ID", "File ID must be a valid UUID.");
+  }
+
+  const supabase = getSupabase(env);
+  const { data: asset, error: dbError } = await supabase
+    .from("media_assets")
+    .select(
+      "id, project_id, original_filename, storage_key, mime_type, size_bytes, visibility, created_at"
+    )
+    .eq("id", fileId)
+    .maybeSingle();
+
+  if (dbError) {
+    console.error(`[${requestId}] getFile error:`, dbError.message);
+    return error(requestId, 500, "DATABASE_ERROR", "Could not fetch file metadata.");
+  }
+
+  if (!asset || (caller.type === "api_key" && asset.project_id !== caller.project.id)) {
+    return error(requestId, 404, "RESOURCE_NOT_FOUND", "File not found.");
+  }
+
+  return success(requestId, { file: formatFileRecord(asset, origin) });
+}
+
+// PATCH /v1/files/{id} — update a file's visibility ('public' or 'private').
+export async function handleUpdateFileVisibility(request, fileId, caller, origin, requestId, env) {
+  if (!UUID_REGEX.test(fileId)) {
+    return error(requestId, 400, "INVALID_ID", "File ID must be a valid UUID.");
+  }
+
+  let body;
+  try {
+    body = await request.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return error(requestId, 400, "INVALID_BODY", "Request body must be a JSON object.");
+    }
+  } catch {
+    return error(requestId, 400, "INVALID_JSON", "Request body must be valid JSON.");
+  }
+
+  if (body.visibility !== "public" && body.visibility !== "private") {
+    return error(
+      requestId,
+      400,
+      "VALIDATION_ERROR",
+      "visibility is required and must be either 'public' or 'private'."
+    );
+  }
+
+  const supabase = getSupabase(env);
+  const { data: existing, error: findError } = await supabase
+    .from("media_assets")
+    .select("id, project_id")
+    .eq("id", fileId)
+    .maybeSingle();
+
+  if (findError) {
+    console.error(`[${requestId}] updateFile lookup error:`, findError.message);
+    return error(requestId, 500, "DATABASE_ERROR", "Could not look up file.");
+  }
+
+  if (!existing || (caller.type === "api_key" && existing.project_id !== caller.project.id)) {
+    return error(requestId, 404, "RESOURCE_NOT_FOUND", "File not found.");
+  }
+
+  const { data: updated, error: updateError } = await supabase
+    .from("media_assets")
+    .update({ visibility: body.visibility })
+    .eq("id", fileId)
+    .select(
+      "id, project_id, original_filename, storage_key, mime_type, size_bytes, visibility, created_at"
+    )
+    .single();
+
+  if (updateError) {
+    console.error(`[${requestId}] updateFile error:`, updateError.message);
+    return error(requestId, 500, "DATABASE_ERROR", "Could not update file visibility.");
+  }
+
+  await logActivity(env, {
+    projectId: updated.project_id,
+    actorType: caller.type,
+    actorId: caller.type === "api_key" ? caller.apiKey.id : caller.user.id,
+    action: "file.updated",
+    details: { file_id: updated.id, visibility: updated.visibility },
+  });
+
+  return success(requestId, { file: formatFileRecord(updated, origin) });
+}
+
+// GET /v1/files/{id}/content — stream binary file content for an authorized API key or Admin.
+export async function handleDownloadFile(fileId, caller, requestId, env) {
+  if (!UUID_REGEX.test(fileId)) {
+    return error(requestId, 400, "INVALID_ID", "File ID must be a valid UUID.");
+  }
+
+  if (!env.MEDIA_BUCKET) {
+    return error(requestId, 500, "STORAGE_NOT_CONFIGURED", "File storage bucket is not configured.");
+  }
+
+  const supabase = getSupabase(env);
+  const { data: asset, error: dbError } = await supabase
+    .from("media_assets")
+    .select("id, project_id, original_filename, storage_key, mime_type, size_bytes, visibility")
+    .eq("id", fileId)
+    .maybeSingle();
+
+  if (dbError) {
+    console.error(`[${requestId}] downloadFile lookup error:`, dbError.message);
+    return error(requestId, 500, "DATABASE_ERROR", "Could not look up file.");
+  }
+
+  if (!asset || (caller.type === "api_key" && asset.project_id !== caller.project.id)) {
+    return error(requestId, 404, "RESOURCE_NOT_FOUND", "File not found.");
+  }
+
+  const object = await env.MEDIA_BUCKET.get(asset.storage_key);
+  if (!object) {
+    return error(requestId, 404, "FILE_CONTENT_MISSING", "File content was not found in storage.");
+  }
+
+  return buildBinaryResponse(object, asset, false);
+}
+
+// GET /v1/public/files/{id} — stream binary file content without authentication
+// ONLY when visibility is 'public' and the parent project is 'active'.
+export async function handlePublicFile(fileId, requestId, env) {
+  if (!UUID_REGEX.test(fileId)) {
+    return error(requestId, 400, "INVALID_ID", "File ID must be a valid UUID.");
+  }
+
+  if (!env.MEDIA_BUCKET) {
+    return error(requestId, 500, "STORAGE_NOT_CONFIGURED", "File storage bucket is not configured.");
+  }
+
+  const supabase = getSupabase(env);
+  const { data: asset, error: dbError } = await supabase
+    .from("media_assets")
+    .select(
+      "id, project_id, original_filename, storage_key, mime_type, size_bytes, visibility, projects ( status )"
+    )
+    .eq("id", fileId)
+    .maybeSingle();
+
+  if (dbError) {
+    console.error(`[${requestId}] publicFile lookup error:`, dbError.message);
+    return error(requestId, 500, "DATABASE_ERROR", "Could not look up file.");
+  }
+
+  // Never reveal whether a private file or archived project's file exists: always return 404.
+  if (!asset || asset.visibility !== "public" || asset.projects?.status !== "active") {
+    return error(requestId, 404, "RESOURCE_NOT_FOUND", "Public file not found.");
+  }
+
+  const object = await env.MEDIA_BUCKET.get(asset.storage_key);
+  if (!object) {
+    return error(requestId, 404, "FILE_CONTENT_MISSING", "File content was not found in storage.");
+  }
+
+  return buildBinaryResponse(object, asset, true);
 }
 
 // DELETE /v1/files/{id} — delete a file from R2 and remove its metadata row.
@@ -276,4 +476,3 @@ export async function handleDeleteFile(fileId, caller, requestId, env) {
 
   return success(requestId, { deleted: true, id: fileId });
 }
-
