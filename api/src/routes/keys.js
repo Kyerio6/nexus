@@ -1,6 +1,7 @@
 import { getSupabase } from "../supabase.js";
 import { hashApiKey } from "../auth.js";
 import { success, error } from "../response.js";
+import { logActivity } from "./logs.js";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -16,7 +17,7 @@ function generateSecretKey() {
 
 // POST /v1/projects/{id}/keys — generate a new API key for a project.
 // The full secret key is returned ONLY in this response and is never stored.
-export async function handleCreateKey(request, projectId, requestId, env) {
+export async function handleCreateKey(request, projectId, requestId, env, adminId = null) {
   if (!UUID_REGEX.test(projectId)) {
     return error(requestId, 400, "INVALID_ID", "Project ID must be a valid UUID.");
   }
@@ -79,6 +80,14 @@ export async function handleCreateKey(request, projectId, requestId, env) {
     return error(requestId, 500, "DATABASE_ERROR", "Could not create API key.");
   }
 
+  await logActivity(env, {
+    projectId,
+    actorType: "admin",
+    actorId: adminId,
+    action: "api_key.created",
+    details: { key_id: data.id, name: data.name, key_prefix: data.key_prefix },
+  });
+
   return success(
     requestId,
     {
@@ -129,7 +138,7 @@ export async function handleListKeys(projectId, requestId, env) {
 }
 
 // DELETE /v1/keys/{id} — revoke an API key by setting revoked_at.
-export async function handleRevokeKey(keyId, requestId, env) {
+export async function handleRevokeKey(keyId, requestId, env, adminId = null) {
   if (!UUID_REGEX.test(keyId)) {
     return error(requestId, 400, "INVALID_ID", "Key ID must be a valid UUID.");
   }
@@ -166,6 +175,14 @@ export async function handleRevokeKey(keyId, requestId, env) {
     console.error(`[${requestId}] revokeKey update error:`, updateError.message);
     return error(requestId, 500, "DATABASE_ERROR", "Could not revoke API key.");
   }
+
+  await logActivity(env, {
+    projectId: data.project_id,
+    actorType: "admin",
+    actorId: adminId,
+    action: "api_key.revoked",
+    details: { key_id: data.id, name: data.name, key_prefix: data.key_prefix },
+  });
 
   return success(requestId, { api_key: data });
 }

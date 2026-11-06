@@ -11,7 +11,9 @@ My personal API infrastructure platform. See `AGENTS.md` for the full project in
 ## Database setup (once)
 
 1. Create a free project at https://supabase.com.
-2. Open **SQL Editor**, paste the contents of `database/migrations/001_projects_and_api_keys.sql`, and run it.
+2. Open **SQL Editor**, paste and run each migration in order:
+   - `database/migrations/001_projects_and_api_keys.sql`
+   - `database/migrations/002_activity_logs.sql`
 
 ## Run the API locally
 
@@ -43,6 +45,7 @@ curl http://localhost:8787/v1/health
 | POST | `/v1/projects/{id}/keys` | **Admin.** Generates a new API key (`name`). Returns the full `secret_key` **once** |
 | GET | `/v1/projects/{id}/keys` | **Admin.** Lists API key metadata for a project (never returns the secret) |
 | DELETE | `/v1/keys/{id}` | **Admin.** Revokes an API key |
+| GET | `/v1/logs` | **Admin.** Lists recent activity logs (optional `?project_id=` and `?limit=1..100`) |
 | GET | `/v1/me` | **API Key.** Returns the project associated with the caller's API key |
 
 ### Admin routes

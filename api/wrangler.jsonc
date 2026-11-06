@@ -2,6 +2,15 @@
   // Cloudflare Worker configuration for the NEXUS API.
   "name": "nexus-api",
   "main": "src/index.js",
-  "compatibility_date": "2026-10-01"
+  "compatibility_date": "2026-10-01",
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    }
+  ]
 }
-

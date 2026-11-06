@@ -1,5 +1,6 @@
 import { getSupabase } from "../supabase.js";
 import { success, error } from "../response.js";
+import { logActivity } from "./logs.js";
 
 const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -47,7 +48,7 @@ export async function handleListProjects(requestId, env) {
 }
 
 // POST /v1/projects — create a new project.
-export async function handleCreateProject(request, requestId, env) {
+export async function handleCreateProject(request, requestId, env, adminId = null) {
   const { body, response } = await readJsonBody(request, requestId);
   if (response) return response;
 
@@ -95,6 +96,14 @@ export async function handleCreateProject(request, requestId, env) {
     return error(requestId, 500, "DATABASE_ERROR", "Could not create project.");
   }
 
+  await logActivity(env, {
+    projectId: data.id,
+    actorType: "admin",
+    actorId: adminId,
+    action: "project.created",
+    details: { name: data.name, slug: data.slug },
+  });
+
   return success(requestId, { project: data }, 201);
 }
 
@@ -124,7 +133,7 @@ export async function handleGetProject(projectId, requestId, env) {
 }
 
 // PATCH /v1/projects/{id} — update name, description, or status.
-export async function handleUpdateProject(request, projectId, requestId, env) {
+export async function handleUpdateProject(request, projectId, requestId, env, adminId = null) {
   if (!UUID_REGEX.test(projectId)) {
     return error(requestId, 400, "INVALID_ID", "Project ID must be a valid UUID.");
   }
@@ -192,6 +201,13 @@ export async function handleUpdateProject(request, projectId, requestId, env) {
     return error(requestId, 404, "RESOURCE_NOT_FOUND", "Project not found.");
   }
 
+  await logActivity(env, {
+    projectId: data.id,
+    actorType: "admin",
+    actorId: adminId,
+    action: "project.updated",
+    details: updates,
+  });
+
   return success(requestId, { project: data });
 }
-
