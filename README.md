@@ -7,6 +7,7 @@ My personal API infrastructure platform. See `AGENTS.md` for the full project in
 - `api/` — the NEXUS API (one Cloudflare Worker)
 - `database/migrations/` — SQL files, run in order in the Supabase SQL Editor
 - `dashboard/` — the React + Vite developer dashboard
+- `docs/` — API Reference (`docs/API.md`) and AI Integration Guide (`docs/AI_INTEGRATION_GUIDE.md`)
 
 ## Database setup (once)
 
@@ -49,6 +50,9 @@ The dashboard runs at http://localhost:5173.
 | Method | Path | Description |
 |---|---|---|
 | GET | `/v1/health` | Returns `status: "ok"` if the API is running and the database is reachable, otherwise `"degraded"`. `database` is `"ok"`, `"error"` or `"not_configured"` |
+| GET | `/openapi.json` | **Public.** Machine-readable OpenAPI 3.1.0 specification |
+| GET | `/llms.txt` | **Public.** Concise AI documentation index |
+| GET | `/llms-full.txt` | **Public.** Complete consolidated documentation and code examples for AI assistants |
 | GET | `/v1/admin/me` | **Admin.** Returns the logged-in admin's `id` and `email` |
 | GET | `/v1/projects` | **Admin.** Lists all projects (newest first) |
 | POST | `/v1/projects` | **Admin.** Creates a project (`name`, optional `slug`, optional `description`) |

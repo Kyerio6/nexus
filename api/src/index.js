@@ -26,6 +26,11 @@ import {
   handlePublicFile,
   handleDeleteFile,
 } from "./routes/files.js";
+import {
+  handleOpenApi,
+  handleLlmsTxt,
+  handleLlmsFullTxt,
+} from "./routes/docs.js";
 
 export default {
   async fetch(request, env) {
@@ -77,6 +82,16 @@ async function requireApiKeyOrAdmin(request, env, requestId) {
 }
 
 async function routeRequest(request, url, method, path, requestId, env) {
+  if (method === "GET" && path === "/openapi.json") {
+    return handleOpenApi(url);
+  }
+  if (method === "GET" && path === "/llms.txt") {
+    return handleLlmsTxt(url);
+  }
+  if (method === "GET" && path === "/llms-full.txt") {
+    return handleLlmsFullTxt(url);
+  }
+
   if (method === "GET" && path === "/v1/health") {
     return await handleHealth(requestId, env);
   }
