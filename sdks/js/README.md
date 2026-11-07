@@ -41,3 +41,4 @@ const buffer = await nexus.files.download(asset.id);
 // 7. Delete file
 await nexus.files.delete(asset.id);
 ```
+
