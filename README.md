@@ -17,6 +17,7 @@ My personal API infrastructure platform. See `AGENTS.md` for the full project in
    - `database/migrations/001_projects_and_api_keys.sql`
    - `database/migrations/002_activity_logs.sql`
    - `database/migrations/003_media_assets.sql`
+   - `database/migrations/004_app_records.sql`
 
 ## Run the API locally
 
@@ -71,6 +72,14 @@ The dashboard runs at http://localhost:5173.
 | GET | `/v1/files/{id}/content` | **API Key / Admin.** Downloads a file's binary content (both `private` and `public` files) |
 | DELETE | `/v1/files/{id}` | **API Key / Admin.** Deletes a file from R2 and removes its metadata |
 | GET | `/v1/public/files/{id}` | **Public.** Streams a file's binary content without auth **only if** `visibility` is `"public"` and its project is `"active"` |
+| POST | `/v1/data/{collection}` | **API Key.** Creates a project-scoped JSON document (`{ key?, data }`, max 64 KB UTF-8) |
+| GET | `/v1/data/{collection}` | **API Key.** Lists documents in a project collection (`?limit=`, `?offset=`, `?order=`, `?key=`, `?filter_field=&filter_value=`) |
+| GET | `/v1/data/{collection}/{id}` | **API Key.** Fetches one document scoped to `(id, project_id, collection)` |
+| PATCH | `/v1/data/{collection}/{id}` | **API Key.** Full replacement of document `data` (and optional `key`) |
+| DELETE | `/v1/data/{collection}/{id}` | **API Key.** Deletes one document scoped to `(id, project_id, collection)` |
+| GET | `/v1/admin/projects/{projectId}/data/{collection}` | **Admin.** Lists documents in a project's collection |
+| GET | `/v1/admin/projects/{projectId}/data/{collection}/{id}` | **Admin.** Fetches one document in a project's collection |
+| DELETE | `/v1/admin/projects/{projectId}/data/{collection}/{id}` | **Admin.** Deletes one document in a project's collection |
 
 ### Admin routes
 

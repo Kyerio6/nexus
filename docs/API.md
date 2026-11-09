@@ -48,8 +48,8 @@ When an error occurs (`HTTP 4xx` or `5xx`):
 | Route Type | Required Header | Notes |
 |---|---|---|
 | **Public** (`/v1/health`, `/v1/public/files/{id}`, `/openapi.json`, `/llms.txt`, `/llms-full.txt`) | None | Accessible without credentials |
-| **Application** (`/v1/me`, `/v1/files/*`) | `Authorization: Bearer nx_sk_...` or `X-API-Key: nx_sk_...` | Project is automatically derived from the key hash. **Server-side only.** |
-| **Admin** (`/v1/admin/me`, `/v1/projects/*`, `/v1/keys/*`, `/v1/logs`) | `Authorization: Bearer <supabase-access-token>` | User UID must be listed in `ADMIN_USER_IDS` |
+| **Application** (`/v1/me`, `/v1/files/*`, `/v1/data/*`) | `Authorization: Bearer nx_sk_...` or `X-API-Key: nx_sk_...` | Project is automatically derived from the key hash. **Server-side only.** |
+| **Admin** (`/v1/admin/*`, `/v1/projects/*`, `/v1/keys/*`, `/v1/logs`) | `Authorization: Bearer <supabase-access-token>` | User UID must be listed in `ADMIN_USER_IDS` |
 
 ---
 
@@ -85,6 +85,27 @@ When an error occurs (`HTTP 4xx` or `5xx`):
 - **`GET /v1/public/files/{id}`** *(Public)* — Streams the binary file without authentication **only when** `visibility === "public"` and the parent project is `"active"`.
 - **`DELETE /v1/files/{id}`** *(API Key or Admin)* — Deletes the object from R2 and removes its row from `media_assets`.
 
-### 6. Activity Logs *(Admin)*
+### 6. Project-Scoped Document Storage (`app_records`)
+> **Hybrid Database Strategy & Limitations:**
+> - `/v1/data/{collection}` provides lightweight project-scoped JSON document storage (game saves, player preferences, chat/session logs, simple app records).
+> - **Not a relational database replacement:** No SQL joins, no cross-document foreign keys, no multi-document transactions, and no server-side aggregations. Applications with complex relational requirements (such as YATA or LEDGED) should use their own dedicated relational schema or database alongside NEXUS.
+> - **Strict project isolation:** Every `/v1/data/*` request requires a project API key (`nx_sk_...`) and derives `project_id` exclusively from that key. Passing `project_id` in query params or the request body is rejected with `400 VALIDATION_ERROR`.
+> - **Size & replacement rules:** `data` must be a plain JSON object (`{ ... }`) up to **64 KB UTF-8** (`65,536` bytes), with a `72 KB` raw HTTP body cap. `PATCH` performs **full replacement** of `data` (partial `merge` is not supported).
+
+- **`POST /v1/data/{collection}`** *(API Key ONLY)* — Body: `{ key?: string, data: object }`. Collection name must be `1..64` chars matching `^[a-z0-9][a-z0-9_-]*$`. Optional `key` (`1..128` chars, `^[a-zA-Z0-9][a-zA-Z0-9._:-]*$`) is unique per `(project_id, collection)`. Returns `201` with `{ record }`, `409 KEY_TAKEN` on duplicate key, or `413 PAYLOAD_TOO_LARGE` if `data` exceeds 64 KB UTF-8.
+- **`GET /v1/data/{collection}`** *(API Key ONLY)* — Lists documents in the collection with deterministic pagination sorted by `(created_at, id)`:
+  - `?limit=1..100` (default `25`)
+  - `?offset=0..100000` (default `0`)
+  - `?order=asc|desc` (default `desc`)
+  - `?key=<exact_key>` (optional exact key lookup)
+  - `?filter_field=<top_level_field>&filter_value=<value>` (optional top-level JSON containment filter)
+  - Returns `{ records: [...], pagination: { limit, offset, total, order } }`.
+- **`GET /v1/data/{collection}/{id}`** *(API Key ONLY)* — Fetches a single document scoped to `(id, project_id, collection)`. Returns `{ record }` or `404 RESOURCE_NOT_FOUND`.
+- **`PATCH /v1/data/{collection}/{id}`** *(API Key ONLY)* — Body: `{ key?: string | null, data: object }`. Replaces the entire `data` object (and optional `key`) and updates `updated_at`, scoped to `(id, project_id, collection)`. Returns `{ record }`.
+- **`DELETE /v1/data/{collection}/{id}`** *(API Key ONLY)* — Deletes a document scoped to `(id, project_id, collection)`. Returns `{ deleted: true, id }`.
+- **`GET /v1/admin/projects/{projectId}/data/{collection}`**, **`GET /v1/admin/projects/{projectId}/data/{collection}/{id}`**, **`DELETE /v1/admin/projects/{projectId}/data/{collection}/{id}`** *(Admin ONLY)* — Separate administrator routes for inspecting or deleting project documents.
+
+### 7. Activity Logs *(Admin)*
 - **`GET /v1/logs`** — Query params: optional `?project_id=<uuid>` and `?limit=1..100` (default `50`). Returns `{ logs: [...] }`.
+
 

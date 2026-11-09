@@ -25,6 +25,55 @@ export interface NexusMediaAsset {
   public_url: string | null;
 }
 
+export interface NexusDataRecord<T = Record<string, unknown>> {
+  id: string;
+  project_id: string;
+  collection: string;
+  key: string | null;
+  data: T;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NexusDataListResult<T = Record<string, unknown>> {
+  records: NexusDataRecord<T>[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    order: "asc" | "desc";
+  };
+}
+
+export interface NexusDataCollection<T = Record<string, unknown>> {
+  create(
+    data: T,
+    options?: { key?: string | null }
+  ): Promise<NexusDataRecord<T>>;
+  list(options?: {
+    limit?: number;
+    offset?: number;
+    order?: "asc" | "desc";
+    key?: string;
+    filterField?: string;
+    filterValue?: string | number | boolean | null;
+    filter_field?: string;
+    filter_value?: string | number | boolean | null;
+  }): Promise<NexusDataListResult<T>>;
+  get(recordId: string): Promise<NexusDataRecord<T>>;
+  replace(
+    recordId: string,
+    data: T,
+    options?: { key?: string | null }
+  ): Promise<NexusDataRecord<T>>;
+  update(
+    recordId: string,
+    data: T,
+    options?: { key?: string | null }
+  ): Promise<NexusDataRecord<T>>;
+  delete(recordId: string): Promise<{ deleted: boolean; id: string }>;
+}
+
 export class NexusError extends Error {
   status: number;
   code: string;
@@ -68,6 +117,7 @@ export class Nexus {
     project: NexusProject;
     api_key: { id: string; name: string; key_prefix: string };
   }>;
+  data<T = Record<string, unknown>>(collection: string): NexusDataCollection<T>;
 }
 
 export default Nexus;

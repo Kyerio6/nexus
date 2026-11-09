@@ -40,5 +40,32 @@ const buffer = await nexus.files.download(asset.id);
 
 // 7. Delete file
 await nexus.files.delete(asset.id);
+
+// 8. Project-scoped Document Storage (up to 64 KB UTF-8 JSON per document)
+const notes = nexus.data("notes");
+
+const created = await notes.create(
+  { title: "Hello", status: "open", views: 1 },
+  { key: "welcome-note" }
+);
+
+const { records, pagination } = await notes.list({
+  limit: 25,
+  offset: 0,
+  order: "desc",
+  filterField: "status",
+  filterValue: "open",
+});
+
+const fetched = await notes.get(created.id);
+
+// Full document replacement via PATCH
+const replaced = await notes.replace(created.id, {
+  title: "Updated Title",
+  status: "archived",
+});
+
+await notes.delete(created.id);
 ```
+
 

@@ -31,6 +31,13 @@ import {
   handleLlmsTxt,
   handleLlmsFullTxt,
 } from "./routes/docs.js";
+import {
+  handleCreateRecord,
+  handleListRecords,
+  handleGetRecord,
+  handleReplaceRecord,
+  handleDeleteRecord,
+} from "./routes/data.js";
 
 export default {
   async fetch(request, env) {
@@ -63,6 +70,15 @@ export default {
     }
   },
 };
+
+// Safely decodes a URL path segment; returns the raw segment if percent-encoding is malformed.
+function safeDecodeSegment(segment) {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
 
 // Allows either a project API key ("nx_sk_...") or a logged-in admin token.
 async function requireApiKeyOrAdmin(request, env, requestId) {
@@ -205,6 +221,101 @@ async function routeRequest(request, url, method, path, requestId, env) {
   const publicFileMatch = path.match(/^\/v1\/public\/files\/([^/]+)$/);
   if (publicFileMatch && method === "GET") {
     return await handlePublicFile(publicFileMatch[1], requestId, env);
+  }
+
+  // Application Document Storage routes (API Key ONLY — project is always derived from the key):
+  // GET, POST /v1/data/{collection}
+  const dataCollectionMatch = path.match(/^\/v1\/data\/([^/]+)$/);
+  if (dataCollectionMatch && (method === "GET" || method === "POST")) {
+    const { project, apiKey, response } = await requireApiKey(request, env, requestId);
+    if (response) return response;
+
+    const collection = safeDecodeSegment(dataCollectionMatch[1]);
+    if (method === "GET") {
+      return await handleListRecords(url, collection, project.id, requestId, env);
+    }
+    if (method === "POST") {
+      return await handleCreateRecord(request, collection, project, apiKey, requestId, env);
+    }
+  }
+
+  // Application Document Storage item routes (API Key ONLY):
+  // GET, PATCH, DELETE /v1/data/{collection}/{id}
+  const dataRecordMatch = path.match(/^\/v1\/data\/([^/]+)\/([^/]+)$/);
+  if (dataRecordMatch && ["GET", "PATCH", "DELETE"].includes(method)) {
+    const { project, apiKey, response } = await requireApiKey(request, env, requestId);
+    if (response) return response;
+
+    const collection = safeDecodeSegment(dataRecordMatch[1]);
+    const recordId = safeDecodeSegment(dataRecordMatch[2]);
+
+    if (method === "GET") {
+      return await handleGetRecord(collection, recordId, project.id, requestId, env);
+    }
+    if (method === "PATCH") {
+      return await handleReplaceRecord(
+        request,
+        collection,
+        recordId,
+        project,
+        apiKey,
+        requestId,
+        env
+      );
+    }
+    if (method === "DELETE") {
+      return await handleDeleteRecord(
+        collection,
+        recordId,
+        project.id,
+        { type: "api_key", id: apiKey.id },
+        requestId,
+        env
+      );
+    }
+  }
+
+  // Separate Administrator Document Inspection routes (Admin Bearer Token ONLY):
+  // GET /v1/admin/projects/{projectId}/data/{collection}
+  const adminDataCollectionMatch = path.match(
+    /^\/v1\/admin\/projects\/([^/]+)\/data\/([^/]+)$/
+  );
+  if (adminDataCollectionMatch && method === "GET") {
+    const { response } = await requireAdmin(request, env, requestId);
+    if (response) return response;
+
+    const projectId = safeDecodeSegment(adminDataCollectionMatch[1]);
+    const collection = safeDecodeSegment(adminDataCollectionMatch[2]);
+    return await handleListRecords(url, collection, projectId, requestId, env, {
+      isAdminRoute: true,
+    });
+  }
+
+  // GET, DELETE /v1/admin/projects/{projectId}/data/{collection}/{id}
+  const adminDataRecordMatch = path.match(
+    /^\/v1\/admin\/projects\/([^/]+)\/data\/([^/]+)\/([^/]+)$/
+  );
+  if (adminDataRecordMatch && (method === "GET" || method === "DELETE")) {
+    const { user, response } = await requireAdmin(request, env, requestId);
+    if (response) return response;
+
+    const projectId = safeDecodeSegment(adminDataRecordMatch[1]);
+    const collection = safeDecodeSegment(adminDataRecordMatch[2]);
+    const recordId = safeDecodeSegment(adminDataRecordMatch[3]);
+
+    if (method === "GET") {
+      return await handleGetRecord(collection, recordId, projectId, requestId, env);
+    }
+    if (method === "DELETE") {
+      return await handleDeleteRecord(
+        collection,
+        recordId,
+        projectId,
+        { type: "admin", id: user.id },
+        requestId,
+        env
+      );
+    }
   }
 
   return error(requestId, 404, "ROUTE_NOT_FOUND", "The requested route does not exist.");

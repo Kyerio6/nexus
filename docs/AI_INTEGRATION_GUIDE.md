@@ -108,13 +108,23 @@ Every JSON error response follows the exact same format:
 ```
 
 Common error codes:
-- `400 VALIDATION_ERROR` / `INVALID_JSON` / `INVALID_ID` / `FILE_TOO_LARGE` / `UNSUPPORTED_FILE_TYPE`
+- `400 VALIDATION_ERROR` / `INVALID_JSON` / `INVALID_BODY` / `INVALID_ID` / `FILE_TOO_LARGE` / `UNSUPPORTED_FILE_TYPE`
 - `401 UNAUTHORIZED` / `MISSING_API_KEY` / `INVALID_API_KEY` / `REVOKED_API_KEY`
 - `403 FORBIDDEN` / `PROJECT_ARCHIVED`
 - `404 ROUTE_NOT_FOUND` / `RESOURCE_NOT_FOUND`
-- `409 SLUG_TAKEN`
+- `409 SLUG_TAKEN` / `KEY_TAKEN`
+- `413 PAYLOAD_TOO_LARGE`
 - `429 RATE_LIMITED`
 - `500 INTERNAL_ERROR` / `DATABASE_ERROR` / `STORAGE_ERROR`
+
+---
+
+## 6B. When to Use NEXUS Document Storage (`/v1/data/{collection}`) vs. a Relational Database
+
+NEXUS follows a **hybrid database ownership strategy**:
+- **Use `/v1/data/{collection}` (or `nexus.data(collection)` in the JS SDK)** for lightweight, project-scoped JSON documents up to **64 KB UTF-8** such as Unity game saves, player settings, BeginAgain chat/session state, or feature flags.
+- **Do NOT use `/v1/data/{collection}` as a relational database replacement:** it intentionally does not support SQL joins, foreign keys across documents, multi-document transactions, or aggregations, and `PATCH` performs full replacement of `data`.
+- **Use a dedicated relational schema or database** for applications with complex relational models (such as YATA food ordering/delivery or LEDGED marketplace transactions), while still using NEXUS for file storage, key verification, and shared infrastructure.
 
 ---
 

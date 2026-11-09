@@ -119,6 +119,19 @@ export function handleOpenApi(url) {
             created_at: { type: "string", format: "date-time" },
           },
         },
+        AppRecord: {
+          type: "object",
+          required: ["id", "project_id", "collection", "key", "data", "created_at", "updated_at"],
+          properties: {
+            id: { type: "string", format: "uuid" },
+            project_id: { type: "string", format: "uuid" },
+            collection: { type: "string", example: "notes" },
+            key: { type: ["string", "null"], example: "welcome-note" },
+            data: { type: "object", example: { title: "First Note", status: "open" } },
+            created_at: { type: "string", format: "date-time" },
+            updated_at: { type: "string", format: "date-time" },
+          },
+        },
       },
     },
     paths: {
@@ -364,6 +377,144 @@ export function handleOpenApi(url) {
           responses: { 200: { description: "List of activity logs" } },
         },
       },
+      "/v1/data/{collection}": {
+        get: {
+          summary: "List documents in a project collection",
+          security: [{ ProjectApiKeyAuth: [] }],
+          parameters: [
+            { name: "collection", in: "path", required: true, schema: { type: "string" } },
+            { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 100, default: 25 } },
+            { name: "offset", in: "query", schema: { type: "integer", minimum: 0, maximum: 100000, default: 0 } },
+            { name: "order", in: "query", schema: { type: "string", enum: ["asc", "desc"], default: "desc" } },
+            { name: "key", in: "query", schema: { type: "string" } },
+            { name: "filter_field", in: "query", schema: { type: "string" } },
+            { name: "filter_value", in: "query", schema: { type: "string" } },
+          ],
+          responses: {
+            200: { description: "Paginated list of documents and pagination metadata" },
+            400: { description: "Validation error" },
+            401: { description: "Missing, invalid, or revoked API key" },
+          },
+        },
+        post: {
+          summary: "Create a document in a project collection (max 64 KB UTF-8 JSON object)",
+          security: [{ ProjectApiKeyAuth: [] }],
+          parameters: [{ name: "collection", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["data"],
+                  properties: {
+                    key: { type: ["string", "null"] },
+                    data: { type: "object" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: { description: "Created document record" },
+            400: { description: "Validation error" },
+            409: { description: "Duplicate key in collection (KEY_TAKEN)" },
+            413: { description: "Document data (>64 KB UTF-8) or request body (>72 KB) too large" },
+          },
+        },
+      },
+      "/v1/data/{collection}/{id}": {
+        get: {
+          summary: "Get a single document by UUID in a project collection",
+          security: [{ ProjectApiKeyAuth: [] }],
+          parameters: [
+            { name: "collection", in: "path", required: true, schema: { type: "string" } },
+            { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          ],
+          responses: {
+            200: { description: "Document record" },
+            404: { description: "Document not found in this project and collection" },
+          },
+        },
+        patch: {
+          summary: "Full replacement of document data (and optional key) in a project collection",
+          security: [{ ProjectApiKeyAuth: [] }],
+          parameters: [
+            { name: "collection", in: "path", required: true, schema: { type: "string" } },
+            { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["data"],
+                  properties: {
+                    key: { type: ["string", "null"] },
+                    data: { type: "object" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "Updated document record" },
+            400: { description: "Validation error" },
+            404: { description: "Document not found in this project and collection" },
+            409: { description: "Duplicate key in collection (KEY_TAKEN)" },
+            413: { description: "Document data (>64 KB UTF-8) or request body (>72 KB) too large" },
+          },
+        },
+        delete: {
+          summary: "Delete a document by UUID in a project collection",
+          security: [{ ProjectApiKeyAuth: [] }],
+          parameters: [
+            { name: "collection", in: "path", required: true, schema: { type: "string" } },
+            { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          ],
+          responses: {
+            200: { description: "Document deleted" },
+            404: { description: "Document not found in this project and collection" },
+          },
+        },
+      },
+      "/v1/admin/projects/{projectId}/data/{collection}": {
+        get: {
+          summary: "Admin inspection: list documents in a specific project's collection",
+          security: [{ AdminBearerAuth: [] }],
+          parameters: [
+            { name: "projectId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+            { name: "collection", in: "path", required: true, schema: { type: "string" } },
+            { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 100, default: 25 } },
+            { name: "offset", in: "query", schema: { type: "integer", minimum: 0, maximum: 100000, default: 0 } },
+            { name: "order", in: "query", schema: { type: "string", enum: ["asc", "desc"], default: "desc" } },
+          ],
+          responses: { 200: { description: "Paginated list of documents" } },
+        },
+      },
+      "/v1/admin/projects/{projectId}/data/{collection}/{id}": {
+        get: {
+          summary: "Admin inspection: get a single document in a project's collection",
+          security: [{ AdminBearerAuth: [] }],
+          parameters: [
+            { name: "projectId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+            { name: "collection", in: "path", required: true, schema: { type: "string" } },
+            { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          ],
+          responses: { 200: { description: "Document record" }, 404: { description: "Not found" } },
+        },
+        delete: {
+          summary: "Admin inspection: delete a single document in a project's collection",
+          security: [{ AdminBearerAuth: [] }],
+          parameters: [
+            { name: "projectId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+            { name: "collection", in: "path", required: true, schema: { type: "string" } },
+            { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          ],
+          responses: { 200: { description: "Document deleted" }, 404: { description: "Not found" } },
+        },
+      },
     },
   };
 
@@ -398,7 +549,20 @@ export function handleLlmsTxt(url) {
    - Authorized Download: GET /v1/files/{id}/content
    - Public Stream: GET /v1/public/files/{id} (No auth required if visibility === "public")
    - Delete: DELETE /v1/files/{id}
-6. Activity & Security Logs (Admin): GET /v1/logs
+6. Project-Scoped Document Storage (JSONB app_records — max 64 KB UTF-8 per document):
+   - Create Document: POST /v1/data/{collection} (API Key ONLY)
+   - List Documents: GET /v1/data/{collection} (API Key ONLY; ?limit=1..100, ?offset=0..100000, ?order=asc|desc, ?key=, ?filter_field=&filter_value=)
+   - Get Document: GET /v1/data/{collection}/{id} (API Key ONLY)
+   - Full Replace Document: PATCH /v1/data/{collection}/{id} (API Key ONLY — replaces entire 'data' object)
+   - Delete Document: DELETE /v1/data/{collection}/{id} (API Key ONLY)
+   - Admin Inspection: GET/DELETE /v1/admin/projects/{projectId}/data/{collection}[/{id}] (Admin Bearer Token ONLY)
+7. Activity & Security Logs (Admin): GET /v1/logs
+
+## Hybrid Database Ownership & Document Storage Limitations
+- \`/v1/data/{collection}\` is a lightweight project-scoped JSON document store for game saves, player settings, chat/session logs, and simple app records.
+- It is NOT a replacement for a relational database: no SQL joins, no multi-document transactions, no aggregations, and each document's \`data\` object is capped at 64 KB UTF-8 (72 KB raw request body).
+- \`PATCH /v1/data/{collection}/{id}\` performs full replacement of \`data\` (partial shallow merge is not supported).
+- Applications with complex relational requirements (such as YATA or LEDGED) should use their own dedicated relational schema or database while using NEXUS for files, auth verification, and shared services.
 
 ## Authentication Overview
 - Application Requests: Send project API key in \`Authorization: Bearer nx_sk_...\` or \`X-API-Key: nx_sk_...\`.
@@ -557,6 +721,28 @@ Always check both \`response.ok\` and \`payload.success === true\`. Log \`payloa
 - Auth: Project API Key (must own file) or Admin Bearer Token
 - Response \`200\`: \`{ deleted: true, id: "uuid" }\`
 
+### Project-Scoped Document Storage (\`/v1/data/{collection}\`)
+> **Hybrid Database Strategy & Limitations:**
+> - \`/v1/data/{collection}\` stores JSON objects up to **64 KB UTF-8** (72 KB max raw request body) scoped strictly to the project associated with the caller's \`nx_sk_...\` API key.
+> - Supplying \`project_id\` in the query string or request body on \`/v1/data/*\` is rejected with \`400 VALIDATION_ERROR\`.
+> - \`PATCH\` performs **full replacement** of \`data\` (supplying \`merge\` is rejected with \`400 VALIDATION_ERROR\`).
+> - No relational joins, foreign keys across documents, aggregations, or multi-record transactions. Applications with heavy relational models (e.g. YATA, LEDGED) should use their own relational schema/database alongside NEXUS.
+
+- **\`POST /v1/data/{collection}\`** (API Key ONLY)
+  - Collection name: \`1..64\` chars matching \`^[a-z0-9][a-z0-9_-]*$\`.
+  - Body: \`{ "key"?: "optional-unique-key", "data": { ... } }\` (\`data\` must be a plain JSON object <= 64 KB UTF-8).
+  - Response \`201\`: \`{ record: { id, project_id, collection, key, data, created_at, updated_at } }\`.
+  - Errors: \`400 VALIDATION_ERROR\`, \`409 KEY_TAKEN\`, \`413 PAYLOAD_TOO_LARGE\`.
+- **\`GET /v1/data/{collection}\`** (API Key ONLY)
+  - Query Params: \`limit\` (\`1..100\`, default \`25\`), \`offset\` (\`0..100000\`, default \`0\`), \`order\` (\`asc\`|\`desc\`, default \`desc\`, deterministically sorted by \`(created_at, id)\`), \`key\` (exact match), \`filter_field\` + \`filter_value\` (top-level JSON equality filter).
+  - Response \`200\`: \`{ records: [ AppRecord ], pagination: { limit, offset, total, order } }\`.
+- **\`GET /v1/data/{collection}/{id}\`** (API Key ONLY)
+  - Scoped to \`(id, project_id, collection)\`. Returns \`200 { record }\` or \`404 RESOURCE_NOT_FOUND\`.
+- **\`PATCH /v1/data/{collection}/{id}\`** (API Key ONLY)
+  - Body: \`{ "key"?: "new-key-or-null", "data": { ... } }\`. Full replacement of \`data\`. Scoped to \`(id, project_id, collection)\`. Returns \`200 { record }\`.
+- **\`DELETE /v1/data/{collection}/{id}\`** (API Key ONLY)
+  - Scoped to \`(id, project_id, collection)\`. Returns \`200 { deleted: true, id }\`.
+
 ### Admin Endpoints (Require Supabase Auth Bearer Token from ADMIN_USER_IDS)
 - \`GET /v1/admin/me\` -> \`{ id, email }\`
 - \`GET /v1/projects\` -> \`{ projects: [...] }\`
@@ -566,6 +752,9 @@ Always check both \`response.ok\` and \`payload.success === true\`. Log \`payloa
 - \`POST /v1/projects/{id}/keys\` -> Body: \`{ name }\` -> \`201 { api_key: { ..., secret_key } }\`
 - \`GET /v1/projects/{id}/keys\` -> \`{ api_keys: [...] }\`
 - \`DELETE /v1/keys/{id}\` -> \`{ api_key }\`
+- \`GET /v1/admin/projects/{projectId}/data/{collection}\` -> \`{ records, pagination }\`
+- \`GET /v1/admin/projects/{projectId}/data/{collection}/{id}\` -> \`{ record }\`
+- \`DELETE /v1/admin/projects/{projectId}/data/{collection}/{id}\` -> \`{ deleted: true, id }\`
 - \`GET /v1/logs?project_id=&limit=50\` -> \`{ logs: [...] }\`
 
 ---

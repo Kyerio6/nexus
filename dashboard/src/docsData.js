@@ -981,6 +981,289 @@ export const ENDPOINT_DOCS = [
     errorResponses: [{ status: 404, code: "RESOURCE_NOT_FOUND", message: "File not found." }],
   },
   {
+    id: "create-record",
+    category: "Document Storage (Data)",
+    title: "Create Document",
+    method: "POST",
+    path: "/v1/data/{collection}",
+    examplePath: "/v1/data/notes",
+    authType: "api_key",
+    authDescription: "Project API Key ONLY (Authorization: Bearer nx_sk_... or X-API-Key: nx_sk_...)",
+    headers: [
+      { name: "Authorization", value: "Bearer YOUR_API_KEY", required: true },
+      { name: "Content-Type", value: "application/json", required: true },
+    ],
+    requiredParams: [
+      {
+        name: "collection",
+        in: "path",
+        type: "string (1..64 chars, [a-z0-9][a-z0-9_-]*)",
+        description: "Collection name (e.g. 'notes', 'player_saves')",
+      },
+      {
+        name: "data",
+        in: "body",
+        type: "JSON object (max 64 KB UTF-8)",
+        description: "Plain JSON object to store",
+      },
+    ],
+    optionalParams: [
+      {
+        name: "key",
+        in: "body",
+        type: "string (1..128 chars, [a-zA-Z0-9._:-])",
+        description: "Optional natural key, unique within (project, collection)",
+      },
+    ],
+    requestBodyFormat: "JSON object: { key?, data } (max 64 KB UTF-8 for data, 72 KB raw request body)",
+    sampleRequestBody: {
+      key: "welcome-note",
+      data: {
+        title: "First Note",
+        status: "open",
+        priority: 1,
+      },
+    },
+    description:
+      "Creates a project-scoped JSON document in the specified collection. The project is always derived from the authenticated API key; supplying project_id in the body is rejected.",
+    successResponse: {
+      success: true,
+      data: {
+        record: {
+          id: "74f63218-0000-4000-8000-000000000010",
+          project_id: "b7c0c123-0000-4000-8000-000000000001",
+          collection: "notes",
+          key: "welcome-note",
+          data: { title: "First Note", status: "open", priority: 1 },
+          created_at: "2026-11-09T08:00:00.000Z",
+          updated_at: "2026-11-09T08:00:00.000Z",
+        },
+      },
+      meta: { request_id: "f1234567-89ab-4cde-8f01-234567890abc", version: "v1" },
+      error: null,
+    },
+    errorResponses: [
+      { status: 400, code: "VALIDATION_ERROR", message: "Field 'data' is required and must be a JSON object ({ ... })." },
+      { status: 409, code: "KEY_TAKEN", message: "A record with key 'welcome-note' already exists in collection 'notes'." },
+      { status: 413, code: "PAYLOAD_TOO_LARGE", message: "Document 'data' exceeds the maximum size of 64 KB (65536 UTF-8 bytes)." },
+    ],
+  },
+  {
+    id: "list-records",
+    category: "Document Storage (Data)",
+    title: "List Documents in Collection",
+    method: "GET",
+    path: "/v1/data/{collection}",
+    examplePath: "/v1/data/notes?limit=25&offset=0&order=desc",
+    authType: "api_key",
+    authDescription: "Project API Key ONLY (Authorization: Bearer nx_sk_... or X-API-Key: nx_sk_...)",
+    headers: [{ name: "Authorization", value: "Bearer YOUR_API_KEY", required: true }],
+    requiredParams: [
+      {
+        name: "collection",
+        in: "path",
+        type: "string (1..64 chars)",
+        description: "Collection name",
+      },
+    ],
+    optionalParams: [
+      { name: "limit", in: "query", type: "integer (1..100)", description: "Max documents per page (default 25)" },
+      { name: "offset", in: "query", type: "integer (0..100000)", description: "Pagination offset (default 0)" },
+      { name: "order", in: "query", type: "'asc' | 'desc'", description: "Deterministic sort order on (created_at, id)" },
+      { name: "key", in: "query", type: "string", description: "Filter by exact record key" },
+      { name: "filter_field", in: "query", type: "string", description: "Top-level JSON field name to match (requires filter_value)" },
+      { name: "filter_value", in: "query", type: "string", description: "Top-level JSON field value to match (boolean/number/null/string)" },
+    ],
+    requestBodyFormat: "None",
+    description:
+      "Lists documents in a collection belonging to the authenticated project with deterministic pagination on (created_at, id) and optional key or top-level field filtering.",
+    successResponse: {
+      success: true,
+      data: {
+        records: [
+          {
+            id: "74f63218-0000-4000-8000-000000000010",
+            project_id: "b7c0c123-0000-4000-8000-000000000001",
+            collection: "notes",
+            key: "welcome-note",
+            data: { title: "First Note", status: "open", priority: 1 },
+            created_at: "2026-11-09T08:00:00.000Z",
+            updated_at: "2026-11-09T08:00:00.000Z",
+          },
+        ],
+        pagination: {
+          limit: 25,
+          offset: 0,
+          total: 1,
+          order: "desc",
+        },
+      },
+      meta: { request_id: "f1234567-89ab-4cde-8f01-234567890abc", version: "v1" },
+      error: null,
+    },
+    errorResponses: [
+      { status: 400, code: "VALIDATION_ERROR", message: "limit must be a whole number between 1 and 100." },
+    ],
+  },
+  {
+    id: "get-record",
+    category: "Document Storage (Data)",
+    title: "Get Document by ID",
+    method: "GET",
+    path: "/v1/data/{collection}/{id}",
+    examplePath: "/v1/data/notes/YOUR_RECORD_ID",
+    authType: "api_key",
+    authDescription: "Project API Key ONLY (Authorization: Bearer nx_sk_... or X-API-Key: nx_sk_...)",
+    headers: [{ name: "Authorization", value: "Bearer YOUR_API_KEY", required: true }],
+    requiredParams: [
+      { name: "collection", in: "path", type: "string", description: "Collection name" },
+      { name: "id", in: "path", type: "UUID", description: "Document UUID" },
+    ],
+    optionalParams: [],
+    requestBodyFormat: "None",
+    description:
+      "Fetches a single document strictly scoped to the authenticated project, collection name, and document UUID.",
+    successResponse: {
+      success: true,
+      data: {
+        record: {
+          id: "74f63218-0000-4000-8000-000000000010",
+          project_id: "b7c0c123-0000-4000-8000-000000000001",
+          collection: "notes",
+          key: "welcome-note",
+          data: { title: "First Note", status: "open", priority: 1 },
+          created_at: "2026-11-09T08:00:00.000Z",
+          updated_at: "2026-11-09T08:00:00.000Z",
+        },
+      },
+      meta: { request_id: "f1234567-89ab-4cde-8f01-234567890abc", version: "v1" },
+      error: null,
+    },
+    errorResponses: [
+      { status: 404, code: "RESOURCE_NOT_FOUND", message: "Document not found." },
+    ],
+  },
+  {
+    id: "replace-record",
+    category: "Document Storage (Data)",
+    title: "Replace Document (Full Update)",
+    method: "PATCH",
+    path: "/v1/data/{collection}/{id}",
+    examplePath: "/v1/data/notes/YOUR_RECORD_ID",
+    authType: "api_key",
+    authDescription: "Project API Key ONLY (Authorization: Bearer nx_sk_... or X-API-Key: nx_sk_...)",
+    headers: [
+      { name: "Authorization", value: "Bearer YOUR_API_KEY", required: true },
+      { name: "Content-Type", value: "application/json", required: true },
+    ],
+    requiredParams: [
+      { name: "collection", in: "path", type: "string", description: "Collection name" },
+      { name: "id", in: "path", type: "UUID", description: "Document UUID" },
+      { name: "data", in: "body", type: "JSON object (max 64 KB UTF-8)", description: "Complete replacement JSON object" },
+    ],
+    optionalParams: [
+      { name: "key", in: "body", type: "string | null", description: "Optional updated key (or null to clear)" },
+    ],
+    requestBodyFormat: "JSON object: { key?, data } (Full replacement of data; partial merge is not supported)",
+    sampleRequestBody: {
+      key: "welcome-note",
+      data: {
+        title: "Updated Note",
+        status: "archived",
+      },
+    },
+    description:
+      "Replaces the entire 'data' JSON object (and optional 'key') of an existing document scoped to (id, project_id, collection), and refreshes updated_at.",
+    successResponse: {
+      success: true,
+      data: {
+        record: {
+          id: "74f63218-0000-4000-8000-000000000010",
+          project_id: "b7c0c123-0000-4000-8000-000000000001",
+          collection: "notes",
+          key: "welcome-note",
+          data: { title: "Updated Note", status: "archived" },
+          created_at: "2026-11-09T08:00:00.000Z",
+          updated_at: "2026-11-09T08:05:00.000Z",
+        },
+      },
+      meta: { request_id: "f1234567-89ab-4cde-8f01-234567890abc", version: "v1" },
+      error: null,
+    },
+    errorResponses: [
+      { status: 400, code: "VALIDATION_ERROR", message: "Partial merge is not supported; PATCH performs full document replacement of 'data'." },
+      { status: 404, code: "RESOURCE_NOT_FOUND", message: "Document not found." },
+      { status: 409, code: "KEY_TAKEN", message: "A record with key '...' already exists in collection 'notes'." },
+      { status: 413, code: "PAYLOAD_TOO_LARGE", message: "Document 'data' exceeds the maximum size of 64 KB (65536 UTF-8 bytes)." },
+    ],
+  },
+  {
+    id: "delete-record",
+    category: "Document Storage (Data)",
+    title: "Delete Document",
+    method: "DELETE",
+    path: "/v1/data/{collection}/{id}",
+    examplePath: "/v1/data/notes/YOUR_RECORD_ID",
+    authType: "api_key",
+    authDescription: "Project API Key ONLY (Authorization: Bearer nx_sk_... or X-API-Key: nx_sk_...)",
+    headers: [{ name: "Authorization", value: "Bearer YOUR_API_KEY", required: true }],
+    requiredParams: [
+      { name: "collection", in: "path", type: "string", description: "Collection name" },
+      { name: "id", in: "path", type: "UUID", description: "Document UUID" },
+    ],
+    optionalParams: [],
+    requestBodyFormat: "None",
+    description:
+      "Deletes a document strictly scoped to the authenticated project, collection name, and document UUID.",
+    successResponse: {
+      success: true,
+      data: {
+        deleted: true,
+        id: "74f63218-0000-4000-8000-000000000010",
+      },
+      meta: { request_id: "f1234567-89ab-4cde-8f01-234567890abc", version: "v1" },
+      error: null,
+    },
+    errorResponses: [
+      { status: 404, code: "RESOURCE_NOT_FOUND", message: "Document not found." },
+    ],
+  },
+  {
+    id: "admin-list-records",
+    category: "Document Storage (Data)",
+    title: "Admin: List Project Documents",
+    method: "GET",
+    path: "/v1/admin/projects/{projectId}/data/{collection}",
+    examplePath: "/v1/admin/projects/YOUR_PROJECT_ID/data/notes?limit=25",
+    authType: "admin",
+    authDescription: "Admin ONLY (Supabase Auth Bearer token)",
+    headers: [{ name: "Authorization", value: "Bearer <SUPABASE_ACCESS_TOKEN>", required: true }],
+    requiredParams: [
+      { name: "projectId", in: "path", type: "UUID", description: "Target Project UUID" },
+      { name: "collection", in: "path", type: "string", description: "Collection name" },
+    ],
+    optionalParams: [
+      { name: "limit", in: "query", type: "integer (1..100)", description: "Max documents per page (default 25)" },
+      { name: "offset", in: "query", type: "integer (0..100000)", description: "Pagination offset (default 0)" },
+      { name: "order", in: "query", type: "'asc' | 'desc'", description: "Sort order on (created_at, id)" },
+    ],
+    requestBodyFormat: "None",
+    description:
+      "Administrator route for inspecting documents inside a specific project's collection. Project API keys are rejected on this route.",
+    successResponse: {
+      success: true,
+      data: {
+        records: [],
+        pagination: { limit: 25, offset: 0, total: 0, order: "desc" },
+      },
+      meta: { request_id: "f1234567-89ab-4cde-8f01-234567890abc", version: "v1" },
+      error: null,
+    },
+    errorResponses: [
+      { status: 401, code: "UNAUTHORIZED", message: "Missing or invalid login token." },
+    ],
+  },
+  {
     id: "list-logs",
     category: "Activity Logs",
     title: "List Activity Logs",

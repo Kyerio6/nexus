@@ -172,6 +172,88 @@ export class Nexus {
       method: "DELETE",
     });
   }
+
+  /**
+   * Returns a collection-scoped helper for project document storage (`/v1/data/{collection}`).
+   * Note: PATCH (`replace` / `update`) performs full replacement of `data`.
+   * @param {string} collection - Collection name (1..64 chars, `[a-z0-9][a-z0-9_-]*`)
+   */
+  data(collection) {
+    if (!collection || typeof collection !== "string") {
+      throw new NexusError("A valid collection name is required.", {
+        code: "VALIDATION_ERROR",
+      });
+    }
+    const encodedCol = encodeURIComponent(collection);
+
+    const replaceRecord = async (recordId, dataObj, options = {}) => {
+      const body = { data: dataObj };
+      if ("key" in options && options.key !== undefined) {
+        body.key = options.key;
+      }
+      const res = await this._requestJson(
+        `/v1/data/${encodedCol}/${encodeURIComponent(recordId)}`,
+        {
+          method: "PATCH",
+          body,
+        }
+      );
+      return res.record;
+    };
+
+    return {
+      // POST /v1/data/{collection}
+      create: async (dataObj, options = {}) => {
+        const body = { data: dataObj };
+        if ("key" in options && options.key !== undefined) {
+          body.key = options.key;
+        }
+        const res = await this._requestJson(`/v1/data/${encodedCol}`, {
+          method: "POST",
+          body,
+        });
+        return res.record;
+      },
+
+      // GET /v1/data/{collection}
+      list: async (options = {}) => {
+        const params = new URLSearchParams();
+        if (options.limit !== undefined) params.set("limit", String(options.limit));
+        if (options.offset !== undefined) params.set("offset", String(options.offset));
+        if (options.order !== undefined) params.set("order", String(options.order));
+        if (options.key !== undefined) params.set("key", String(options.key));
+        const filterField = options.filterField ?? options.filter_field;
+        const filterValue = options.filterValue ?? options.filter_value;
+        if (filterField !== undefined) params.set("filter_field", String(filterField));
+        if (filterValue !== undefined) params.set("filter_value", String(filterValue));
+
+        const qs = params.toString();
+        return await this._requestJson(`/v1/data/${encodedCol}${qs ? `?${qs}` : ""}`);
+      },
+
+      // GET /v1/data/{collection}/{id}
+      get: async (recordId) => {
+        const res = await this._requestJson(
+          `/v1/data/${encodedCol}/${encodeURIComponent(recordId)}`
+        );
+        return res.record;
+      },
+
+      // PATCH /v1/data/{collection}/{id} (full replacement of `data`)
+      replace: replaceRecord,
+      update: replaceRecord,
+
+      // DELETE /v1/data/{collection}/{id}
+      delete: async (recordId) => {
+        return await this._requestJson(
+          `/v1/data/${encodedCol}/${encodeURIComponent(recordId)}`,
+          {
+            method: "DELETE",
+          }
+        );
+      },
+    };
+  }
 }
 
 export default Nexus;
