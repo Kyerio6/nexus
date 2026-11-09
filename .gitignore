@@ -11,3 +11,11 @@ node_modules/
 .wrangler/
 dist/
 
+# SDK build artifacts and caches
+__pycache__/
+*.py[cod]
+vendor/
+bin/
+obj/
+
+

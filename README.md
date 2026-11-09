@@ -8,7 +8,11 @@ My personal API infrastructure platform. See `AGENTS.md` for the full project in
 - `database/migrations/` — SQL files, run in order in the Supabase SQL Editor
 - `dashboard/` — the React + Vite developer dashboard
 - `docs/` — API Reference (`docs/API.md`) and AI Integration Guide (`docs/AI_INTEGRATION_GUIDE.md`)
-- `sdks/js/` — Lightweight JavaScript / TypeScript SDK (`@nexus/sdk`)
+- `sdks/` — Lightweight zero-dependency SDKs:
+  - `sdks/js/` — JavaScript / TypeScript SDK (`@nexus/sdk`)
+  - `sdks/php/` — PHP / Laravel SDK (`Nexus\NexusClient`)
+  - `sdks/unity/` — C# / Unity SDK (`Nexus.NexusClient`)
+  - `sdks/python/` — Python SDK (`nexus.Nexus`)
 
 ## Database setup (once)
 

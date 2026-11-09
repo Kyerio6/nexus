@@ -29,10 +29,10 @@ NEXUS publishes three machine-readable discovery endpoints directly on the API W
 | Application Environment | Recommended Integration Method |
 |---|---|
 | **Node.js / Cloudflare Workers / Backend JS** | Import `Nexus` from `sdks/js/index.js` or use native `fetch` with `Authorization: Bearer nx_sk_...` |
-| **PHP / Laravel Backend** | Use Laravel `Http::withToken(config('services.nexus.key'))` or PHP `curl` on your server |
-| **Python Backend / Scripts** | Use `requests` with `Authorization: Bearer <NEXUS_API_KEY>` |
-| **React / HTML Frontends** | Call your own backend for privileged operations (uploading/deleting files). Load public files directly via `<img src=".../v1/public/files/{id}" />` |
-| **C# / Unity Games** | Fetch public assets directly via `GET /v1/public/files/{id}`. Route uploads or private operations through your game server |
+| **PHP / Laravel Backend** | Use `Nexus\NexusClient` from `sdks/php/src/NexusClient.php` or Laravel `Http::withToken(config('services.nexus.key'))` |
+| **Python Backend / Scripts** | Import `Nexus` from `sdks/python/nexus.py` (zero dependencies) or use `requests` with `Authorization: Bearer <NEXUS_API_KEY>` |
+| **React / HTML Frontends** | Call your own backend for privileged operations (uploading/deleting files or writing data). Load public files directly via `<img src=".../v1/public/files/{id}" />` |
+| **C# / Unity Games** | Use `Nexus.NexusClient` from `sdks/unity/NexusClient.cs`. Fetch public assets directly with `apiKey: null` (`Files.DownloadPublicAsync` / `Files.LoadPublicTextureCoroutine`). Route private operations through your game server |
 
 ---
 

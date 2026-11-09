@@ -1,0 +1,17 @@
+{
+  "name": "nexus/sdk-php",
+  "description": "Lightweight, zero-dependency PHP / Laravel SDK for the NEXUS API.",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.0",
+    "ext-curl": "*",
+    "ext-json": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Nexus\\": "src/"
+    }
+  }
+}
+

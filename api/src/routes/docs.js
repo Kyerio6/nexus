@@ -534,7 +534,11 @@ export function handleLlmsTxt(url) {
 - OpenAPI 3.1 Specification: ${origin}/openapi.json
 - Complete AI Documentation & Code Examples: ${origin}/llms-full.txt
 - Repository Docs: docs/API.md and docs/AI_INTEGRATION_GUIDE.md
-- Official JavaScript SDK: sdks/js/index.js
+- Official SDKs:
+  - JavaScript / TypeScript: sdks/js/index.js
+  - PHP / Laravel: sdks/php/src/NexusClient.php
+  - C# / Unity: sdks/unity/NexusClient.cs
+  - Python: sdks/python/nexus.py
 
 ## Available Services
 1. Health & Status: GET /v1/health
@@ -607,11 +611,12 @@ Fetch \`${origin}/llms.txt\` or \`${origin}/openapi.json\` first. NEXUS currentl
 Use the endpoint specifications in this document or \`${origin}/openapi.json\`. Do not guess or hallucinate unimplemented routes.
 
 ### Step 3: Select the Correct Integration Method
-- **Server-side JavaScript / Node.js / Cloudflare Workers:** Use the official lightweight JS SDK (\`sdks/js\`) or native \`fetch\`.
-- **PHP / Laravel backends:** Use Laravel \`Http::withToken(env('NEXUS_API_KEY'))\` or PHP \`curl\`.
-- **Python backends / scripts:** Use \`requests\` with \`Authorization: Bearer <NEXUS_API_KEY>\`.
-- **Public Frontends (React, HTML) & Unity Games:**
-  - For uploading or managing private files: route requests through your own backend server holding \`NEXUS_API_KEY\`.
+- **Server-side JavaScript / Node.js / Cloudflare Workers:** Use the official lightweight JS SDK (\`sdks/js/index.js\`) or native \`fetch\`.
+- **PHP / Laravel backends:** Use the official PHP SDK (\`sdks/php/src/NexusClient.php\`, \`Nexus\\NexusClient\`) or Laravel \`Http::withToken(env('NEXUS_API_KEY'))\`.
+- **Python backends / scripts:** Use the official zero-dependency Python SDK (\`sdks/python/nexus.py\`, \`from nexus import Nexus\`) or \`requests\`.
+- **C# / Unity games & servers:** Use the official C# / Unity SDK (\`sdks/unity/NexusClient.cs\`, \`Nexus.NexusClient\`). In shipped player client builds, pass \`apiKey: null\` and use \`Files.DownloadPublicAsync(id)\` / \`Files.LoadPublicTextureCoroutine(id, ...)\`; keep \`nx_sk_...\` keys on your game server or in \`UNITY_EDITOR\` tools.
+- **Public Frontends (React, HTML):**
+  - For uploading, modifying data, or managing private files: route requests through your own backend server holding \`NEXUS_API_KEY\`.
   - For displaying or downloading public assets: fetch \`${origin}/v1/public/files/{id}\` directly without any API key.
 
 ### Step 4: Authenticate Securely
